@@ -9,9 +9,17 @@ from BeautifulSoup import BeautifulSoup
 root = "http://occupystreams.org"
 
 def get_cached_page(url):
-    name = os.path.join("cache", url.split("://")[1].replace("/", "---"))
+    name = os.path.join(
+        os.path.dirname(__file__),
+        "cache", 
+        url.split("://")[1].replace("/", "---")
+    )
     if not os.path.exists(name):
         content = requests.get(url).content
+        try:
+            os.makedirs(os.path.dirname(name))
+        except OSError:
+            pass
         with codecs.open(name, 'w', 'utf-8') as fh:
             fh.write(content)
     with codecs.open(name, 'r', 'utf-8') as fh:
@@ -76,4 +84,4 @@ for source in sources:
         raise Exception("Geocode not found for %s" % locname)
     source['point'] = latlng['results'][0]['geometry']['location']
 
-print json.dumps({'sources': sources})
+print "var data = %s" % json.dumps({'sources': sources})
