@@ -57,12 +57,12 @@ var generators = {
     "ustream": function(source) {
         return {
             style: {
-                externalGraphic: "../img/ustream.jpg",
+                externalGraphic: "img/ustream.jpg",
                 backgroundGraphic: null,
                 graphicWidth: 25,
                 graphicHeight: 25,
             },
-            html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>", "<a href='", source.url, "'><img src='../img/ustream.jpg'></a>"].join("")
+            html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>", "<a href='", source.url, "'><img src='img/ustream.jpg'></a>"].join("")
         }
     }
 };
