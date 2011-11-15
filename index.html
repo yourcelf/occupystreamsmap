@@ -148,7 +148,6 @@ $("#searchform").submit(function() {
         url: "http://geocoding.cloudmade.com/" + CLOUDMADE_API_KEY + "/geocoding/v2/find.js?query=" + encodeURIComponent(srch.val()),
         dataType: "jsonp",
         success: function(data) {
-            console.log(data);
             srch.removeClass("loading");
             if (data.features) {
                 var bounds = data.features[0].bounds;
