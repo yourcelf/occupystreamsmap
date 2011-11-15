@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>Occupy Streams Map</title>
-<link rel="stylesheet" href="css/olwidget.css" />
+<link rel="stylesheet" href="leaflet/leaflet.css" />
 <style type='text/css'>
     html,body {
         position: relative;
@@ -20,12 +20,28 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
+        width: 70%;
         text-align: center;
         font-size: 38pt;
         z-index: 1000;
         font-weight: bold;
         text-shadow: #999 2px -2px 5px;
+        margin-left: 15%
+    }
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+    .search {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 0.5em;
+        z-index: 10;
+    }
+    input.loading {
+        background: url("img/spinner.gif") no-repeat;
     }
 </style>
 </head>
@@ -36,20 +52,27 @@
     <span style='color: #000;'>STREAMS</span>
     <span style='color: #999'>MAP</span>
 </div>
+<div class='search'>
+    Find location:
+    <form id='searchform' method='get' action=''>
+        <input type='text' id='search' placeholder='e.g. New York' />
+        <input type='submit' value='Go' />
+        <div class='results'></div>
+    </form>
+</div>
 <script src='js/jquery.min.js'></script>
-<script src='http://openlayers.org/api/2.11/OpenLayers.js'></script>
-<script src='http://openstreetmap.org/openlayers/OpenStreetMap.js'></script>
-<script src='js/olwidget.js' type='text/javascript'></script>
 <script type='text/javascript' src='data.js'></script>
+<script type='text/javascript' src='leaflet/leaflet.js'></script>
 <script type='text/javascript'>
+// Replace this with your own API key!
+var CLOUDMADE_API_KEY = '647c4a0955a247f894f83468e96ea60d'; // key for http://web.media.mit.edu/~cfd/occupystreamsmap/
 var generators = {
     "livestream": function(source) {
         return {
             style: {
-                externalGraphic: "http://thumbnail.api.livestream.com/thumbnail?name=" + source.id,
-                backgroundGraphic: null,
-                graphicWidth: 24,
-                graphicHeight: 18
+                url: "http://thumbnail.api.livestream.com/thumbnail?name=" + source.id,
+                width: 24,
+                height: 18
             },
             html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>",
                 "<a href='", source.url, "'><img class='livestreamthumb' src='http://thumbnail.api.livestream.com/thumbnail?name=", source.id, "' style='width: 240px; height: 180px'></a>"
@@ -59,49 +82,101 @@ var generators = {
     "justintv": function(source) {
         return {
             style: {
-                externalGraphic: "http://static-cdn.jtvnw.net/previews/live_user_" + source.id + "-70x53.jpg",
-                backgroundGraphic: null,
-                graphicWidth: 24,
-                graphicHeight: 18,
+                url: "http://static-cdn.jtvnw.net/previews/live_user_" + source.id + "-70x53.jpg",
+                width: 24,
+                height: 18,
             },
             html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>",
                 "<a href='", source.url, "'>",
-                "<img class='justintvthumb' src='http://static-cdn.jtvnw.net/previews/live_user_", source.id, "-320x240.jpg' /></a>"
+                "<img class='justintvthumb' src='http://static-cdn.jtvnw.net/previews/live_user_", source.id, "-320x240.jpg' width='240' height='180' /></a>"
             ].join("")
         }
     },
     "ustream": function(source) {
         return {
             style: {
-                externalGraphic: "img/ustream.jpg",
-                backgroundGraphic: null,
-                graphicWidth: 25,
-                graphicHeight: 25
+                url: "img/ustream.jpg",
+                width: 25,
+                height: 25
             },
             html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>", "<a href='", source.url, "'><img src='img/ustream.jpg'></a>"].join("")
         }
     },
 };
-var infodata = [];
+var osm = new L.TileLayer("http://{s}.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png", {
+    attribution: 'Map data &copy; OpenStreetMap contributors, CC-BY-SA.  Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">.',
+    subdomains: ['otile1', 'otile2', 'otile3', 'otile4'],
+    minZoom: 2,
+    maxZoom: 20
+});
+var map = new L.Map('map', {
+    layers: [osm]
+});
+map.attributionControl.setPrefix("");
 var overlaps = {};
+var bounds = [];
 for (var i = 0; i < data.sources.length; i++) {
+    // cluster -- nudge the icon to the right if it overlaps.
     var source = data.sources[i];
     var lat = source.point.lat;
     var lng = source.point.lng;
     while (overlaps[[lat, lng].join(" ")]) {
-        lng += 0.1;
+        lng += 0.02;
     }
     overlaps[[lat, lng].join(" ")] = true;
-    var geom = "POINT(" + lng + " " + lat + ")";
-    infodata.push([geom, generators[source.provider](source)]);
+
+    // draw.
+    var repr = generators[source.provider](source);
+    var Icon = L.Icon.extend({
+        iconUrl: repr.style.url,
+        iconSize: new L.Point(repr.style.width, repr.style.height),
+    });
+    var point = new L.LatLng(lat, lng);
+    var marker = new L.Marker(point, {icon: new Icon()})
+    marker.bindPopup(repr.html)
+    map.addLayer(marker);
+    bounds.push(point);
 }
-new olwidget.InfoMap('map', infodata, {
-    mapDivStyle: {
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden'
-    }
+map.fitBounds(new L.LatLngBounds(bounds));
+
+
+
+$("#searchform").submit(function() {
+    var srch = $("#search");
+    srch.addClass("loading");
+    $.ajax({
+        url: "http://geocoding.cloudmade.com/" + CLOUDMADE_API_KEY + "/geocoding/v2/find.js?query=" + encodeURIComponent(srch.val()),
+        dataType: "jsonp",
+        success: function(data) {
+            console.log(data);
+            srch.removeClass("loading");
+            if (data.features) {
+                var bounds = data.features[0].bounds;
+                map.fitBounds(new L.LatLngBounds([
+                    new L.LatLng(bounds[0][0], bounds[0][1]),
+                    new L.LatLng(bounds[1][0], bounds[1][1])
+                ]));
+                var names = [data.features[0].properties.name];
+                if (data.features[0].properties["is_in:country"]) {
+                    names.push(data.features[0].properties["is_in:country"]);
+                } else if (data.features[0].properties["is_in:continent"]) {
+                    names.push(data.features[0].properties["is_in:continent"]);
+                } else if (data.features[0].properties["is_in"]) {
+                    names.push(data.features[0].properties["is_in"]);
+                }
+                if (data.features[0].properties.population) {
+                    names.push("<br />Population: " + data.features[0].properties.population);
+                }
+                $(".results", ".search").html(names.join(", "));
+            } else {
+                $(".results", ".search").html("No results."); 
+            }
+        }
+    });
+    return false;
 });
+
+
 window.setInterval(function() {
     $("img.livestreamthumb, img.justintvthumb").each(function() {
         var img = $(this);
@@ -112,6 +187,9 @@ window.setInterval(function() {
         }
     });
 }, 1000);
+
+
+
 </script>
 </body>
 </html>

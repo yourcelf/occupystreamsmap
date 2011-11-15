@@ -72,7 +72,7 @@ for link in links:
 for source in sources:
     # Special case non-geocodable locations
     locname = source['location']
-    if locname.startswith("Wall Street"):
+    if locname.startswith("Wall Street") and "San Diego" not in locname:
         locname = "Wall Street, NY"
     elif locname.startswith("Wall Sreet"): # [sic]
         locname = "Wall Street, NY"
@@ -86,7 +86,8 @@ for source in sources:
         locname = "Los Angeles"
     elif "Boston" in locname:
         locname = "Boston"
-
+    elif "Harvard" in locname:
+        locname = "Harvard, Cambridge, MA"
 
     latlng = json.loads(get_cached_page(
         "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address=%s" % urllib.quote_plus(locname.encode('utf8'))
