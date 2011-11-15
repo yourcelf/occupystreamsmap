@@ -49,13 +49,19 @@ for link in links:
             provider = "livestream"
 
         # Ustream
-        else:
-            match = re.match(r'^.*ustream.tv/embed/(.*)$', iframe['src'])
-            if match:
-                item = match.group(1)
-                provider = "ustream"
-            else:
-                continue
+        match = re.match(r'^.*ustream.tv/(embed|socialstream)/(.*)$', iframe['src'])
+        if match:
+            item = match.group(1)
+            provider = "ustream"
+
+        # justin.tv
+        match = re.match(r'^.*justin\.tv/chat/embed\?channel=([^\&]*)\&.*$', iframe['src'])
+        if match:
+            item = match.group(1)
+            provider = "justintv"
+
+        assert provider is not None, "Source not recognized: '%s'" % iframe['src']
+
         sources.append({
             'provider': provider,
             'id': item,
@@ -72,16 +78,20 @@ for source in sources:
         locname = "Wall Street, NY"
     elif "London" in locname:
         locname = "London"
-    elif locname == "Denver - wired":
+    elif "Denver" in locname:
         locname = "Denver"
-    elif locname == "OccupyPhoenix":
+    elif "Phoenix" in locname:
         locname = "Phoenix, AZ"
+    elif "Los Angeles" in locname:
+        locname = "Los Angeles"
+    elif "Boston" in locname:
+        locname = "Boston"
+
 
     latlng = json.loads(get_cached_page(
         "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address=%s" % urllib.quote_plus(locname.encode('utf8'))
     ))
-    if latlng['status'] == 'ZERO_RESULTS':
-        raise Exception("Geocode not found for %s" % locname)
+    assert latlng['status'] != 'ZERO_RESULTS', "Geocode not found for %s" % locname
     source['point'] = latlng['results'][0]['geometry']['location']
 
 print "var data = %s" % json.dumps({'sources': sources})

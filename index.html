@@ -56,17 +56,31 @@ var generators = {
            ].join("")
         }
     },
+    "justintv": function(source) {
+        return {
+            style: {
+                externalGraphic: "http://static-cdn.jtvnw.net/previews/live_user_" + source.id + "-70x53.jpg",
+                backgroundGraphic: null,
+                graphicWidth: 24,
+                graphicHeight: 18,
+            },
+            html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>",
+                "<a href='", source.url, "'>",
+                "<img class='justintvthumb' src='http://static-cdn.jtvnw.net/previews/live_user_", source.id, "-320x240.jpg' /></a>"
+            ].join("")
+        }
+    },
     "ustream": function(source) {
         return {
             style: {
                 externalGraphic: "img/ustream.jpg",
                 backgroundGraphic: null,
                 graphicWidth: 25,
-                graphicHeight: 25,
+                graphicHeight: 25
             },
             html: ["<h2><a href='", source.url, "'>", source.location, "</a></h2>", "<a href='", source.url, "'><img src='img/ustream.jpg'></a>"].join("")
         }
-    }
+    },
 };
 var infodata = [];
 var overlaps = {};
@@ -89,7 +103,7 @@ new olwidget.InfoMap('map', infodata, {
     }
 });
 window.setInterval(function() {
-    $("img.livestreamthumb").each(function() {
+    $("img.livestreamthumb, img.justintvthumb").each(function() {
         var img = $(this);
         if (img.is(":visible")) {
             var oldSrc = img.attr("src"); 
