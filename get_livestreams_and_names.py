@@ -28,6 +28,7 @@ def get_cached_page(url):
 
 soup = BeautifulSoup(get_cached_page(root))
 links = soup.findAll("a")
+ids = set()
 sources = []
 for link in links:
     if link['href'].startswith("/item/occupy"):
@@ -62,19 +63,20 @@ for link in links:
 
         assert provider is not None, "Source not recognized: '%s'" % iframe['src']
 
-        sources.append({
-            'provider': provider,
-            'id': item,
-            'location': where,
-            'url': "".join((root, link['href'])),
-        })
+        unique = ":".join((provider, item))
+        if unique not in ids:
+            sources.append({
+                'provider': provider,
+                'id': item,
+                'location': where,
+                'url': "".join((root, link['href'])),
+            })
+        ids.add(unique)
 
 for source in sources:
     # Special case non-geocodable locations
     locname = source['location']
-    if locname.startswith("Wall Street") and "San Diego" not in locname:
-        locname = "Wall Street, NY"
-    elif locname.startswith("Wall Sreet"): # [sic]
+    if locname.startswith("Wall Sreet"): # [sic]
         locname = "Wall Street, NY"
     elif "London" in locname:
         locname = "London"
@@ -88,6 +90,19 @@ for source in sources:
         locname = "Boston"
     elif "Harvard" in locname:
         locname = "Harvard, Cambridge, MA"
+    elif "Gorleben" in locname:
+        locname = "Gorleben, Germany"
+    elif "Fort Meyers" in locname:
+        locname = "Fort Meyers, Florida"
+    elif "San Diego" in locname:
+        locname = "San Diego, CA"
+    elif locname.startswith("Wall Street"):
+        locname = "Wall Street, NY"
+    elif locname == "LA - OLA Newscast":
+        locname = "Los Angeles, CA"
+    elif locname == "LA - Civic Engagement":
+        locname = "Los Angeles, CA"
+
 
     latlng = json.loads(get_cached_page(
         "https://maps.googleapis.com/maps/api/geocode/json?sensor=false&address=%s" % urllib.quote_plus(locname.encode('utf8'))
