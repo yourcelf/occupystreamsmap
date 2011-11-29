@@ -66,6 +66,19 @@
 <script type='text/javascript'>
 // Replace this with your own API key!
 var CLOUDMADE_API_KEY = '647c4a0955a247f894f83468e96ea60d'; // key for http://web.media.mit.edu/~cfd/occupystreamsmap/
+
+// occupystreams.org vanished?  Replace with direct links to stream providers.
+for (var i = 0; i < data.sources.length ; i++) {
+    var s = data.sources[i];
+    if (s.provider === "livestream") {
+        s.url = "http://livestream.com/" + s.id;
+    } else if (s.provider === "ustream") {
+        s.url = "http://ustream.tv/channel/" + s.id;
+    } else if (s.provider === "justintv") {
+        s.url = "http://justin.tv/" + s.id;
+    }
+}
+
 var generators = {
     "livestream": function(source) {
         return {

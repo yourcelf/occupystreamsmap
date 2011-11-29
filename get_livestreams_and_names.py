@@ -49,7 +49,7 @@ for link in links:
             provider = "livestream"
 
         # Ustream
-        match = re.match(r'^.*ustream.tv/(embed|socialstream)/(.*)$', iframe['src'])
+        match = re.match(r'^.*ustream.tv/(?:embed|socialstream)/(.*)$', iframe['src'])
         if match:
             item = match.group(1)
             provider = "ustream"
